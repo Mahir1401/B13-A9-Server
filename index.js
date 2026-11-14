@@ -19,11 +19,23 @@ app.use(express.json());
 export async function connectToMongoDB() {
   try {
     await client.connect();
+    const db = client.db('pet_adoption');
+    const petCollection = db.collection('pets');
+
 
     app.listen(port, () => {
       console.log(`Example app listening on port ${port}`);
     });
 
+    app.get('/', (req, res) => {
+      res.send('Hello World!');
+    });
+
+    app.get('/pets', async (req, res) => {
+      const cursor = await petCollection.find();
+      const pets = await cursor.toArray();
+      res.send(pets);
+    });
     console.log("You successfully connected to MongoDB!!!!");
     return client;
   } catch (err) {
