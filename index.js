@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import dns from 'dns';
 import console from 'console';
 
@@ -36,6 +36,13 @@ export async function connectToMongoDB() {
       const pets = await cursor.toArray();
       res.send(pets);
     });
+
+    app.get('/pets/:id', async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const pet = await petCollection.findOne(query);
+      res.send(pet);
+    });
     console.log("You successfully connected to MongoDB!!!!");
     return client;
   } catch (err) {
@@ -48,3 +55,5 @@ export async function disconnectFromMongoDB() {
   // await client.close();
 }
 connectToMongoDB(); 
+
+export default app;
