@@ -54,6 +54,6 @@ export async function connectToMongoDB() {
 export async function disconnectFromMongoDB() {
   // await client.close();
 }
-connectToMongoDB(); 
+await connectToMongoDB(); 
 
 export default app;
