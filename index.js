@@ -16,6 +16,17 @@ const client = new MongoClient(uri);
 app.use(cors());
 app.use(express.json());
 
+const logger = ( req, res, next )=>{
+  console.log(`${req.method} and ${req.url}`)
+  next()
+}
+
+const verifyToken = async (req, res, next)=>{
+  const {authorization} = req.headers
+  console.log(authorization);
+  next();
+}
+
 export async function connectToMongoDB() {
   try {
     await client.connect();
@@ -37,7 +48,7 @@ export async function connectToMongoDB() {
       res.send(pets);
     });
 
-    app.get('/pets/:id', async (req, res) => {
+    app.get('/pets/:id', logger, verifyToken, async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const pet = await petCollection.findOne(query);
@@ -50,10 +61,7 @@ export async function connectToMongoDB() {
   }
 }
 
-// Call this only when your application terminates
-export async function disconnectFromMongoDB() {
-  // await client.close();
-}
+
 await connectToMongoDB(); 
 
 export default app;
