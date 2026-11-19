@@ -18,33 +18,29 @@ const client = new MongoClient(uri);
 app.use(cors());
 app.use(express.json());
 
-const JWKS = createRemoteJWKSet(
-      new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
-    )
-    console.log(JWKS,"jwks");
 
-const logger = ( req, res, next )=>{
+const logger = (req, res, next) => {
   console.log(`${req.method} and ${req.url}`)
   next()
 }
 
-const verifyToken = async (req, res, next)=>{
-  const {authorization} = req.headers
+const verifyToken = async (req, res, next) => {
+  const { authorization } = req.headers
   const token = authorization?.split(' ')[1]
-  if(!token){
-    return res.status(401).json({message:"nigga"})
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" })
   }
   try {
     const JWKS = createRemoteJWKSet(
-      new URL('http://localhost:3000/api/auth/jwks')
+      new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
     )
     const { payload } = await jwtVerify(token, JWKS)
-    console.log(payload); 
+    console.log(payload);
     req.user = payload
     next();
   } catch (error) {
     console.error('Token validation failed:', error)
-    return res.status(401).json({message:"nigga"})
+    return res.status(401).json({ message: "nigga" })
   }
 }
 
@@ -60,12 +56,25 @@ export async function connectToMongoDB() {
     });
 
     app.get('/', (req, res) => {
-      res.send('Hello World!');
+      res.send('Pets Server');
     });
 
     app.get('/pets', async (req, res) => {
-      const cursor = await petCollection.find();
-      const pets = await cursor.toArray();
+      const { search } = req.query;
+      let query = {};
+
+      if (search) {
+        const searchRegex = { $regex: search, $options: 'i' };
+        query = {
+          $or: [
+            { name: searchRegex },
+            { species: searchRegex },
+            { breed: searchRegex },
+            { location: searchRegex }
+          ]
+        };
+      }
+      const pets = await petCollection.find(query).toArray();
       res.send(pets);
     });
 
@@ -83,6 +92,6 @@ export async function connectToMongoDB() {
 }
 
 
-await connectToMongoDB(); 
+await connectToMongoDB();
 
 export default app;
