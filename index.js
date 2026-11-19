@@ -4,6 +4,8 @@ import 'dotenv/config';
 import { MongoClient, ObjectId } from 'mongodb';
 import dns from 'dns';
 import console from 'console';
+import { createRemoteJWKSet, jwtVerify } from 'jose'
+
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -16,6 +18,11 @@ const client = new MongoClient(uri);
 app.use(cors());
 app.use(express.json());
 
+const JWKS = createRemoteJWKSet(
+      new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+    )
+    console.log(JWKS,"jwks");
+
 const logger = ( req, res, next )=>{
   console.log(`${req.method} and ${req.url}`)
   next()
@@ -23,8 +30,22 @@ const logger = ( req, res, next )=>{
 
 const verifyToken = async (req, res, next)=>{
   const {authorization} = req.headers
-  console.log(authorization);
-  next();
+  const token = authorization?.split(' ')[1]
+  if(!token){
+    return res.status(401).json({message:"nigga"})
+  }
+  try {
+    const JWKS = createRemoteJWKSet(
+      new URL('http://localhost:3000/api/auth/jwks')
+    )
+    const { payload } = await jwtVerify(token, JWKS)
+    console.log(payload); 
+    req.user = payload
+    next();
+  } catch (error) {
+    console.error('Token validation failed:', error)
+    return res.status(401).json({message:"nigga"})
+  }
 }
 
 export async function connectToMongoDB() {
